@@ -555,7 +555,7 @@ Every tool prints its options with `--help`.
 
 The teacher side of the project — the Ackermann autopilot (`autopilot.py`, `data_collector.py`, `scripts/`) — is built on
 the open-source **`gazebo_autonomous_driving`** pipeline by **Lucas Mazzetto**. The original MIT license and copyright
-notice are kept in [`LICENSE`](LICENSE).
+notice are kept in [`Mazzetto_LICENSE`](Mazzetto_LICENSE.txt); this project's license is in [`LICENSE`](LICENSE).
 
 The differential-drive robot, the distillation and expert-label tools, the ROS node and the tracks were added in this
 project by **aum ([stealth-exe](https://github.com/stealth-exe))**.
