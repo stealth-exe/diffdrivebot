@@ -87,6 +87,11 @@ Inside the container:
 ```bash
 start_desktop.sh                 # start Xvfb + x11vnc + websockify; once per container start
 export DISPLAY=:1                # in every terminal that opens a GUI
+
+# Set by the image's ~/.bashrc; the fallbacks cover an older container.
+export REPO="${REPO:-/tmp/diffdrivebot}"
+export PKG="${PKG:-$HOME/workspace/src/diffdrivebot}"
+export DATA="${DATA:-$HOME/datasets}"
 mkdir -p "$DATA"                 # dataset directory on the container's disk
 ```
 
@@ -535,6 +540,7 @@ Every tool prints its options with `--help`.
 | `train.py` sits at `Epoch 0: 0/250` with ~1 % CPU | Data-loader workers hang (thread oversubscription, worse under `sudo`) | Put `OMP_NUM_THREADS=1` in front of the command, or use `--num_workers 0` |
 | `torch backend unavailable (ModuleNotFoundError)` | The virtual environment is not active; the NumPy fallback is used | Harmless for dataset generation (the NumPy teacher is exact); `source ~/.venv/bin/activate` for training |
 | `PermissionError` when patching or writing | Files created earlier with `sudo` belong to root | `sudo chown -R $(whoami) "$PKG" "$REPO"` |
+| `mkdir: cannot create directory ''` when running `mkdir -p "$DATA"` | `$DATA` is empty because the shell was opened before the image defined it, or the container was created from an older image | `source ~/.bashrc`, or run `export DATA="$HOME/datasets"` before `mkdir -p "$DATA"` |
 | Gazebo does not appear in the VNC tab | Desktop not started, or `DISPLAY` not set in that terminal | Run `start_desktop.sh`, `export DISPLAY=:1`, reload the browser tab |
 | noVNC loads but reports **Failed to connect to server** | `websockify` is serving the page but `Xvfb`/`x11vnc` died; often a stale `/tmp/.X1-lock` survives a container restart | Run `start_desktop.sh` again — it clears stale locks and checks every process. Logs are in `/tmp/desktop-logs/` |
 | Robot spawns far away / drives off immediately | A stale Gazebo from an earlier run is still running | Use the `pkill` line in [Quick start](#4-drive); inspect with `gz model -m diffdrive_bot -p` |
