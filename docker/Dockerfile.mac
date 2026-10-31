@@ -41,7 +41,7 @@ RUN printf '%s\n' \
     '    exit 1' \
     'fi' \
     '' \
-    'echo "Desktop ready: http://localhost:6767/vnc.html  (logs: $LOG)"' \
+    'echo "Desktop ready: open http://localhost:6767/vnc.html on your Mac (container port 6080; logs: $LOG)"' \
     > /usr/local/bin/start_desktop.sh && \
     chmod +x /usr/local/bin/start_desktop.sh
 

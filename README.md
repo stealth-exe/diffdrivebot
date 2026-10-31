@@ -90,7 +90,8 @@ export DISPLAY=:1                # in every terminal that opens a GUI
 mkdir -p "$DATA"                 # dataset directory on the container's disk
 ```
 
-Open <http://localhost:6767/vnc.html> in a browser. The Gazebo window will appear there.
+Open <http://localhost:6767/vnc.html> in a browser. The Gazebo window will appear there. `start_desktop.sh` prints the
+same URL; **6080 is only the container-internal websockify port**, while **6767** is the port published on the Mac.
 
 ### 4. Drive
 
