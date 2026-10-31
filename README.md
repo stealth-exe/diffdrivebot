@@ -558,6 +558,10 @@ the open-source **`gazebo_autonomous_driving`** pipeline by **Lucas Mazzetto**. 
 notice are kept in [`LICENSE`](LICENSE).
 
 The differential-drive robot, the distillation and expert-label tools, the ROS node and the tracks were added in this
-project.
+project by **aum ([stealth-exe](https://github.com/stealth-exe))**.
+
+Copyright (c) 2025 Lucas Mazzetto
+
+Copyright (c) 2025-2026 aum (stealth-exe)
 
 License: **MIT**.
