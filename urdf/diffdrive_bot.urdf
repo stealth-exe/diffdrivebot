@@ -1,0 +1,214 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot name="diffdrive_bot">
+  <link name="base_link">
+    <visual>
+      <origin xyz="-0.12 0 0.03" rpy="0 0 0" />
+      <geometry>
+        <box size="0.24 0.2 0.06" />
+      </geometry>
+      <material name="body_material">
+        <color rgba="0.1 0.3 0.8 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.12 0 0.03" rpy="0 0 0" />
+      <geometry>
+        <box size="0.24 0.2 0.06" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.5" />
+      <origin xyz="-0.12 0 0.03" rpy="0 0 0" />
+      <inertia ixx="0.00545" ixy="0.0" ixz="0.0" iyy="0.00765" iyz="0.0" izz="0.0122" />
+    </inertial>
+  </link>
+  <link name="left_wheel_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.570795 0 0" />
+      <geometry>
+        <cylinder radius="0.035" length="0.03" />
+      </geometry>
+      <material name="wheel_material">
+        <color rgba="0.05 0.05 0.05 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.570795 0 0" />
+      <geometry>
+        <cylinder radius="0.035" length="0.03" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.15" />
+      <origin xyz="0 0 0" rpy="1.570795 0 0" />
+      <inertia ixx="5.71875e-05" ixy="0.0" ixz="0.0" iyy="5.71875e-05" iyz="0.0" izz="9.1875e-05" />
+    </inertial>
+  </link>
+  <link name="right_wheel_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.570795 0 0" />
+      <geometry>
+        <cylinder radius="0.035" length="0.03" />
+      </geometry>
+      <material name="wheel_material">
+        <color rgba="0.05 0.05 0.05 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.570795 0 0" />
+      <geometry>
+        <cylinder radius="0.035" length="0.03" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.15" />
+      <origin xyz="0 0 0" rpy="1.570795 0 0" />
+      <inertia ixx="5.71875e-05" ixy="0.0" ixz="0.0" iyy="5.71875e-05" iyz="0.0" izz="9.1875e-05" />
+    </inertial>
+  </link>
+  <link name="rear_caster_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.015" />
+      </geometry>
+      <material name="caster_material">
+        <color rgba="0.6 0.6 0.6 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.015" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.02" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <inertia ixx="1.8e-06" ixy="0.0" ixz="0.0" iyy="1.8e-06" iyz="0.0" izz="1.8e-06" />
+    </inertial>
+  </link>
+  <link name="camera_mast_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.02 0.02 0.125" />
+      </geometry>
+      <material name="mast_material">
+        <color rgba="0.25 0.25 0.25 1.0" />
+      </material>
+    </visual>
+    <inertial>
+      <mass value="1e-3" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+  </link>
+  <link name="camera_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.03 0.05 0.03" />
+      </geometry>
+      <material name="camera_material">
+        <color rgba="0.0 0.0 0.0 1.0" />
+      </material>
+    </visual>
+    <inertial>
+      <mass value="1e-3" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+  </link>
+  <joint name="left_wheel_joint" type="continuous">
+    <origin xyz="0 0.115 0" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="left_wheel_link" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="0.01" friction="0.0" />
+  </joint>
+  <joint name="right_wheel_joint" type="continuous">
+    <origin xyz="0 -0.115 0" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="right_wheel_link" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="0.01" friction="0.0" />
+  </joint>
+  <joint name="rear_caster_joint" type="fixed">
+    <origin xyz="-0.21 0 -0.02" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="rear_caster_link" />
+  </joint>
+  <joint name="camera_mast_joint" type="fixed">
+    <origin xyz="0.01 0 0.1225" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="camera_mast_link" />
+  </joint>
+  <joint name="camera_joint" type="fixed">
+    <origin xyz="0.04 0 0.185" rpy="0 0.8 0" />
+    <parent link="base_link" />
+    <child link="camera_link" />
+  </joint>
+  <gazebo reference="left_wheel_link">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+  </gazebo>
+  <gazebo reference="right_wheel_link">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+  </gazebo>
+  <gazebo reference="rear_caster_link">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+  <gazebo>
+    <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+      <left_joint>left_wheel_joint</left_joint>
+      <right_joint>right_wheel_joint</right_joint>
+      <wheel_separation>0.23</wheel_separation>
+      <wheel_radius>0.035</wheel_radius>
+      <odom_publish_frequency>30</odom_publish_frequency>
+      <max_linear_velocity>0.6</max_linear_velocity>
+      <min_linear_velocity>-0.6</min_linear_velocity>
+      <max_angular_velocity>3</max_angular_velocity>
+      <min_angular_velocity>-3</min_angular_velocity>
+      <max_linear_acceleration>2.0</max_linear_acceleration>
+      <min_linear_acceleration>-2.0</min_linear_acceleration>
+      <max_angular_acceleration>8.0</max_angular_acceleration>
+      <min_angular_acceleration>-8.0</min_angular_acceleration>
+      <topic>cmd_vel</topic>
+      <odom_topic>odom</odom_topic>
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_link</child_frame_id>
+    </plugin>
+    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+      <topic>joint_states</topic>
+      <joint_name>left_wheel_joint</joint_name>
+      <joint_name>right_wheel_joint</joint_name>
+    </plugin>
+  </gazebo>
+  <gazebo reference="camera_link">
+    <sensor type="camera" name="front_camera">
+      <update_rate>20</update_rate>
+      <visualize>false</visualize>
+      <topic>camera/image_raw</topic>
+      <camera name="front">
+        <horizontal_fov>1.8</horizontal_fov>
+        <image>
+          <width>256</width>
+          <height>192</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>50</far>
+        </clip>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.007</stddev>
+        </noise>
+      </camera>
+    </sensor>
+  </gazebo>
+</robot>

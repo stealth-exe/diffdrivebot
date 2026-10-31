@@ -1,0 +1,26 @@
+# Version control and local editor/OS files
+.git
+.gitignore
+.DS_Store
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+install/
+log/
+
+# Model weights are distributed via GitHub Releases and mounted at runtime
+*.pt
+
+# Generated data and artifacts
+dataset*/
+scripts/runs/
+*.log
+*_check.png
+rollout_*.png
+preview*.png
+probe_montage.png
+gazebo_frame.png

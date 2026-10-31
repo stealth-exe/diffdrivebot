@@ -1,0 +1,337 @@
+<?xml version="1.0"?>
+<!--
+  Differential-drive bot with a front camera, for Gazebo Harmonic + ROS 2 Jazzy.
+  Written in the same style as vehicle.xacro (Ackermann car). UNTESTED in Gazebo.
+
+  Frames: base_link origin = centre of the wheel axle (so it is `wheel_radius` above the ground),
+  +x forward, +y left, +z up. A DiffDrive plugin replaces the Ackermann vehicle_controller / ros2_control:
+  it subscribes to /cmd_vel (Twist) and publishes /odom.
+
+  The distillation tools (distill/*.py) read the camera_* , image_* and max_* defaults below,
+  so change them here and the dataset renderer follows.
+
+  LAYOUT (axle-forward version): the wheel axle is at the FRONT edge of the chassis and the camera sits 4 cm ahead of
+  the axle (just in front of the small 0.035 m wheels, so they never appear in the picture). The chassis and the rear caster are behind the axle (body_x = -body_length/2 puts the chassis front
+  edge exactly on the axle line). Because the robot pivots about the axle and the camera looks at the ground right
+  under itself (the bottom image row sees the ground ~1 cm ahead of the camera, ~5 cm ahead of the axle), the corner vertex stays visible
+  until the axle is on it. The old layout (camera 0.13 m ahead of the axle) could not see the last 0.14 m.
+  If you change body_length or body_x keep the chassis front edge (body_x + body_length/2) <= camera_forward;
+  make_distill_dataset.py warns when the body or the wheels hide part of the image.
+-->
+<robot name="diffdrive_bot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Arguments -->
+  <xacro:arg name="body_length" default="0.24" />
+  <xacro:arg name="body_width" default="0.20" />
+  <xacro:arg name="body_x" default="-0.12" />
+  <xacro:arg name="body_height" default="0.06" />
+  <xacro:arg name="body_mass" default="1.5" />
+  <xacro:arg name="ground_clearance" default="0.035" />
+  <xacro:arg name="wheel_radius" default="0.035" />
+  <xacro:arg name="wheel_width" default="0.03" />
+  <xacro:arg name="wheel_mass" default="0.15" />
+  <xacro:arg name="caster_radius" default="0.015" />
+  <xacro:arg name="max_linear_velocity" default="0.4" />
+  <xacro:arg name="max_angular_velocity" default="2.0" />
+  <xacro:arg name="camera_height" default="0.22" />
+  <xacro:arg name="camera_forward" default="0.04" />
+  <xacro:arg name="camera_pitch" default="0.8" />
+  <xacro:arg name="camera_fov" default="1.8" />
+  <xacro:arg name="camera_fps" default="20" />
+  <xacro:arg name="image_width" default="256" />
+  <xacro:arg name="image_height" default="192" />
+  <xacro:arg name="sensors_plugin" default="false" />
+
+  <!-- Mathematical constants -->
+  <xacro:property name="PI" value="3.14159265"/>
+
+  <!-- Properties -->
+  <xacro:property name="body_length" value="$(arg body_length)"/>
+  <xacro:property name="body_width" value="$(arg body_width)"/>
+  <xacro:property name="body_x" value="$(arg body_x)"/>
+  <xacro:property name="body_height" value="$(arg body_height)"/>
+  <xacro:property name="body_mass" value="$(arg body_mass)"/>
+  <xacro:property name="ground_clearance" value="$(arg ground_clearance)"/>
+  <xacro:property name="wheel_radius" value="$(arg wheel_radius)"/>
+  <xacro:property name="wheel_width" value="$(arg wheel_width)"/>
+  <xacro:property name="wheel_mass" value="$(arg wheel_mass)"/>
+  <xacro:property name="caster_radius" value="$(arg caster_radius)"/>
+  <xacro:property name="max_linear_velocity" value="$(arg max_linear_velocity)"/>
+  <xacro:property name="max_angular_velocity" value="$(arg max_angular_velocity)"/>
+  <xacro:property name="camera_height" value="$(arg camera_height)"/>
+  <xacro:property name="camera_forward" value="$(arg camera_forward)"/>
+  <xacro:property name="camera_pitch" value="$(arg camera_pitch)"/>
+  <xacro:property name="camera_fov" value="$(arg camera_fov)"/>
+  <xacro:property name="camera_fps" value="$(arg camera_fps)"/>
+  <xacro:property name="image_width" value="$(arg image_width)"/>
+  <xacro:property name="image_height" value="$(arg image_height)"/>
+
+  <xacro:property name="wheel_separation" value="${body_width + wheel_width}"/>
+  <xacro:property name="rear_caster_x" value="${body_x - body_length / 2 + 0.03}"/>
+  <xacro:property name="caster_z" value="${caster_radius - wheel_radius}"/>
+  <xacro:property name="body_z" value="${ground_clearance + body_height / 2 - wheel_radius}"/>
+  <xacro:property name="body_inertia_x" value="${1.0 / 12.0 * body_mass * (body_height * body_height + body_width * body_width)}"/>
+  <xacro:property name="body_inertia_y" value="${1.0 / 12.0 * body_mass * (body_length * body_length + body_height * body_height)}"/>
+  <xacro:property name="body_inertia_z" value="${1.0 / 12.0 * body_mass * (body_length * body_length + body_width * body_width)}"/>
+  <xacro:property name="wheel_inertia_xy" value="${1.0 / 12.0 * wheel_mass * (3 * wheel_radius * wheel_radius + wheel_width * wheel_width)}"/>
+  <xacro:property name="wheel_inertia_z" value="${0.5 * wheel_mass * wheel_radius * wheel_radius}"/>
+  <xacro:property name="caster_mass" value="0.02"/>
+  <xacro:property name="caster_inertia" value="${0.4 * caster_mass * caster_radius * caster_radius}"/>
+  <xacro:property name="body_top" value="${ground_clearance + body_height}"/>
+  <xacro:property name="mast_height" value="${camera_height - body_top}"/>
+  <xacro:property name="mast_z" value="${(body_top + camera_height) / 2 - wheel_radius}"/>
+  <xacro:property name="mast_x" value="${camera_forward - 0.03}"/>
+  <xacro:property name="camera_z" value="${camera_height - wheel_radius}"/>
+
+  <!-- Links -->
+
+  <!-- Chassis (base_link) -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="${body_x} 0 ${body_z}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${body_length} ${body_width} ${body_height}"/>
+      </geometry>
+      <material name="body_material">
+        <color rgba="0.1 0.3 0.8 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="${body_x} 0 ${body_z}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${body_length} ${body_width} ${body_height}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="${body_mass}"/>
+      <origin xyz="${body_x} 0 ${body_z}" rpy="0 0 0"/>
+      <inertia ixx="${body_inertia_x}" ixy="0.0" ixz="0.0" iyy="${body_inertia_y}" iyz="0.0" izz="${body_inertia_z}"/>
+    </inertial>
+  </link>
+
+  <!-- Left Wheel -->
+  <link name="left_wheel_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.570795 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+      </geometry>
+      <material name="wheel_material">
+        <color rgba="0.05 0.05 0.05 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.570795 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="${wheel_mass}"/>
+      <origin xyz="0 0 0" rpy="1.570795 0 0"/>
+      <inertia ixx="${wheel_inertia_xy}" ixy="0.0" ixz="0.0" iyy="${wheel_inertia_xy}" iyz="0.0" izz="${wheel_inertia_z}"/>
+    </inertial>
+  </link>
+
+  <!-- Right Wheel -->
+  <link name="right_wheel_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.570795 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+      </geometry>
+      <material name="wheel_material">
+        <color rgba="0.05 0.05 0.05 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.570795 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="${wheel_mass}"/>
+      <origin xyz="0 0 0" rpy="1.570795 0 0"/>
+      <inertia ixx="${wheel_inertia_xy}" ixy="0.0" ixz="0.0" iyy="${wheel_inertia_xy}" iyz="0.0" izz="${wheel_inertia_z}"/>
+    </inertial>
+  </link>
+
+  <!-- Rear Caster (frictionless ball): with the chassis behind the axle this is the only third support point -->
+  <link name="rear_caster_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="${caster_radius}"/>
+      </geometry>
+      <material name="caster_material">
+        <color rgba="0.6 0.6 0.6 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="${caster_radius}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="${caster_mass}"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="${caster_inertia}" ixy="0.0" ixz="0.0" iyy="${caster_inertia}" iyz="0.0" izz="${caster_inertia}"/>
+    </inertial>
+  </link>
+
+  <!-- Camera mast -->
+  <link name="camera_mast_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.02 0.02 ${mast_height}"/>
+      </geometry>
+      <material name="mast_material">
+        <color rgba="0.25 0.25 0.25 1.0"/>
+      </material>
+    </visual>
+    <inertial>
+      <mass value="1e-3"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+    </inertial>
+  </link>
+
+  <!-- Camera -->
+  <link name="camera_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.03 0.05 0.03"/>
+      </geometry>
+      <material name="camera_material">
+        <color rgba="0.0 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+    <inertial>
+      <mass value="1e-3"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+    </inertial>
+  </link>
+
+  <!-- Joints -->
+
+  <joint name="left_wheel_joint" type="continuous">
+    <origin xyz="0 ${wheel_separation / 2} 0" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="left_wheel_link"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.01" friction="0.0"/>
+  </joint>
+
+  <joint name="right_wheel_joint" type="continuous">
+    <origin xyz="0 ${-wheel_separation / 2} 0" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="right_wheel_link"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.01" friction="0.0"/>
+  </joint>
+
+  <joint name="rear_caster_joint" type="fixed">
+    <origin xyz="${rear_caster_x} 0 ${caster_z}" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="rear_caster_link"/>
+  </joint>
+
+  <joint name="camera_mast_joint" type="fixed">
+    <origin xyz="${mast_x} 0 ${mast_z}" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="camera_mast_link"/>
+  </joint>
+
+  <!-- Camera pitch is positive-down about +y, like vehicle.xacro -->
+  <joint name="camera_joint" type="fixed">
+    <origin xyz="${camera_forward} 0 ${camera_z}" rpy="0 ${camera_pitch} 0"/>
+    <parent link="base_link"/>
+    <child link="camera_link"/>
+  </joint>
+
+  <!-- Gazebo parameters -->
+  <gazebo reference="left_wheel_link">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+  </gazebo>
+
+  <gazebo reference="right_wheel_link">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+  </gazebo>
+
+  <gazebo reference="rear_caster_link">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+
+  <!-- Gazebo plugins -->
+  <gazebo>
+    <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+      <left_joint>left_wheel_joint</left_joint>
+      <right_joint>right_wheel_joint</right_joint>
+      <wheel_separation>${wheel_separation}</wheel_separation>
+      <wheel_radius>${wheel_radius}</wheel_radius>
+      <odom_publish_frequency>30</odom_publish_frequency>
+      <max_linear_velocity>${1.5 * max_linear_velocity}</max_linear_velocity>
+      <min_linear_velocity>${-1.5 * max_linear_velocity}</min_linear_velocity>
+      <max_angular_velocity>${1.5 * max_angular_velocity}</max_angular_velocity>
+      <min_angular_velocity>${-1.5 * max_angular_velocity}</min_angular_velocity>
+      <max_linear_acceleration>2.0</max_linear_acceleration>
+      <min_linear_acceleration>-2.0</min_linear_acceleration>
+      <max_angular_acceleration>8.0</max_angular_acceleration>
+      <min_angular_acceleration>-8.0</min_angular_acceleration>
+      <topic>cmd_vel</topic>
+      <odom_topic>odom</odom_topic>
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_link</child_frame_id>
+    </plugin>
+
+    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+      <topic>joint_states</topic>
+      <joint_name>left_wheel_joint</joint_name>
+      <joint_name>right_wheel_joint</joint_name>
+    </plugin>
+
+    <!-- The example worlds (hexagon.sdf, circle_2_5.sdf, make_line_world.py) already load the Sensors
+         system at world level; loading it a second time here would conflict. Use sensors_plugin:=true
+         only for worlds that do not load it. -->
+    <xacro:if value="$(arg sensors_plugin)">
+      <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+        <render_engine>ogre2</render_engine>
+      </plugin>
+    </xacro:if>
+  </gazebo>
+
+  <!-- Camera sensor -->
+  <gazebo reference="camera_link">
+    <sensor type="camera" name="front_camera">
+      <update_rate>${camera_fps}</update_rate>
+      <visualize>false</visualize>
+      <topic>camera/image_raw</topic>
+      <camera name="front">
+        <horizontal_fov>${camera_fov}</horizontal_fov>
+        <image>
+          <width>${image_width}</width>
+          <height>${image_height}</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>50</far>
+        </clip>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.007</stddev>
+        </noise>
+      </camera>
+    </sensor>
+  </gazebo>
+
+</robot>

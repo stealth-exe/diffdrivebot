@@ -1,0 +1,19 @@
+/**:
+  ros__parameters:
+    # Topics
+    image_topic: "/camera/image_raw"
+    cmd_vel_topic: "/cmd_vel"
+
+    # The exported policy (rl/export_policy.py)
+    model_path: "/tmp/diffdrivebot/rl_policy.pt"
+
+    # These MUST match the training environment (rl_env.py defaults and diffdrive_bot.xacro)
+    max_linear_velocity: 0.4     # [m/s]
+    max_angular_velocity: 2.0    # [rad/s]
+    frame_stack: 3
+    control_period: 0.1          # [s of simulated time between decisions]
+    obs_width: 128
+    obs_height: 96
+
+    # Optional: directory in which the node saves what the policy sees (compare with examples/obs_stack.png)
+    debug_dir: ""

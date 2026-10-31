@@ -1,0 +1,27 @@
+/**:
+  ros__parameters:
+    # Topics
+    image_topic: "/camera/image_raw"   # camera images (bridged from Gazebo by diffdrive_sim.launch.py)
+    cmd_vel_topic: "/cmd_vel"          # Twist commands consumed by the Gazebo DiffDrive plugin
+
+    # Network input (must match training: train.py --height/--width)
+    image_height: 96
+    image_width: 128
+
+    # Model
+    model_path: "/tmp/diffdrivebot/diffdrive_model.pt"
+
+    # Output scaling. MUST equal the values the dataset was normalised with
+    # (make_distill_dataset.py prints them and stores them in <dataset>/distill_meta.json;
+    #  they default to the max_linear_velocity / max_angular_velocity of diffdrive_bot.xacro)
+    max_linear_velocity: 0.4     # [m/s]
+    max_angular_velocity: 2.0    # [rad/s]
+
+    # Command filtering: 0.0 = off, 0.5 = average each command with the previous one
+    smoothing: 0.0
+
+    # Reflex for sharp corners / lost line: rotate in place towards the last turning side
+    lost_line_search: true
+    lost_line_min_fraction: 0.002   # fraction of dark (line) pixels below which the line counts as lost
+    search_angular_velocity: 1.0    # [rad/s]
+    search_linear_velocity: 0.0     # [m/s]
